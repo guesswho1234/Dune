@@ -2,8 +2,6 @@
 
 **Dune** is a small Rust web app offering Price Forward Curve (PFC) machinery, specifically for power market data. Users provide market data and Dune constructs an arbitrage-free forward price curve.
 
-The web app offers example request data for each endpoint. Some of the examples are valid as-is, while others may require additional data points or adjustments to the input.
-
 Access without a registered API key is very limited. API keys can be requested via E-Mail.
 
 [Dune Web App](https://dune.sbcb.at/)
@@ -13,7 +11,7 @@ Access without a registered API key is very limited. API keys can be requested v
 Dune's API is organized into two groups:
 
 * **Core** endpoints handle the construction, transformation, projection, and composition of forward curves.
-* **Shape** endpoints provide tools for modifying the shape of an existing curve using historical spot data or smoothing.
+* **Shape** endpoints provide tools for modifying the shape of an existing curve.
 
 All API endpoints return a common response structure containing metadata, diagnostics, the resulting `main` curve data, and, where applicable, debug information.
 
@@ -21,10 +19,10 @@ All API endpoints return a common response structure containing metadata, diagno
 
 | Endpoint                          | Purpose                                                                                                                                                                                                                                                                                                                                    |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `POST /v1/core/from-settlements`  | Build a forward curve directly from market settlement contracts. Dune completes the contract set where necessary, constructs the delivery grid, solves the PFC, and returns the resulting curve. Optional debug output exposes the intermediate contract-reduction and curve-construction process.                                         |
+| `POST /v1/core/from-settlements`  | Build a forward curve directly from market settlement contracts. Dune completes the contract set where necessary, constructs the delivery grid, solves the system, and returns the resulting curve. Optional debug output exposes the intermediate contract-reduction and curve-construction process.                                         |
 | `POST /v1/core/from-constraints`  | Build a forward curve from an already completed set of constraints contained in `main.completed_constraints`. This is useful when the constraint set has already been prepared or when a curve needs to be reconstructed from existing constraint data.                                                                                    |
-| `POST /v1/core/project`           | Project an existing full curve onto a supplied set of completed constraints. This can be used to adjust a curve so that it satisfies the specified constraint prices while retaining its overall shape as closely as possible. The response reports the maximum price correction and whether the result is within the requested tolerance. |
-| `POST /v1/core/compose-base-peak` | Combine separate base and peak curves into a single composed curve. Base and peak can be supplied either as contracts or as existing `main` curve data. A configurable peak window determines which hours are treated as peak.                                                                                                             |
+| `POST /v1/core/project`           | Project an existing full curve onto a supplied set of completed constraints. This can be used to adjust a curve so that it satisfies the specified constraint prices while retaining its overall shape as closely as possible. The response reports the maximum price correction and whether the supplied curve satisfied the configured tolerance before the correction. |
+| `POST /v1/core/compose-base-peak` | Combine separate base and peak data into a single composed curve. Base and peak data can be supplied either as settlement contracts or as existing `main` curve data. A configurable peak window determines which hours are treated as peak.                                                                                                             |
 
 ### Shape endpoints
 
@@ -41,9 +39,9 @@ All API endpoints return a common response structure containing metadata, diagno
 
 ## Typical workflow
 
-A typical workflow starts with market settlement data and progressively turns it into a usable forward curve.
+A typical workflow starts with market settlement contracts and progressively turns it into a usable forward curve.
 
-### 1. Start with market settlements
+### 1. Start with market settlement contracts
 
 The most direct entry point is:
 
@@ -68,7 +66,7 @@ This makes `from-settlements` useful both for producing a curve and for understa
 
 ### 2. Inspect or modify the curve shape
 
-Once a curve exists, the shape endpoints can be used for further processing. 
+Once a curve exists, the shape endpoints can be used for further processing.
 
 For example, historical spot data can be used with:
 
@@ -84,9 +82,11 @@ Alternatively:
 POST /v1/shape/smooth
 ```
 
-can be used when the objective is to smooth an existing curve.
+can be used when the objective is to smooth an existing curve. 
 
-The shape operations are deliberately separated from the final constraint projection. This allows the user to manipulate the curve shape before enforcing the market constraints. With that, curve shaping can also happen outside of Dune.
+While possible, it is not recommended to combine the shape endpoint.
+
+The shape operations are deliberately separated from the final constraint projection. This allows the user to manipulate the curve shape before enforcing the market constraints. With that, arbitrary curve shaping can also happen outside of Dune.
 
 ### 3. Project the resulting shape onto the market constraints
 
@@ -141,11 +141,10 @@ Dune is intended to separate several parts of the forward-curve workflow that ar
 
 1. **Market constraints** — settlement contracts provide the prices that the curve needs to respect.
 2. **Curve construction** — Dune solves the underlying forward prices from those constraints.
-3. **Curve shape** — historical data or smoothing can be used to influence the shape between the market constraints.
+3. **Curve shape** — historical data or smoothing can be used to alter the shape of the curve.
 4. **Projection** — the resulting shape can be projected back onto the market constraints.
-5. **Base/peak composition** — separate base and peak structures can be combined into a single curve.
 
-This makes it possible to use Dune in different ways depending on the available data.
+This makes it possible to use Dune in different ways depending on the available data and existing workflows.
 
 For example, a simple workflow might be:
 
@@ -158,7 +157,7 @@ Settlement contracts
         ▼
    Forward curve
         │
-        ├───────────────┐
+        ├────── OR ─────┐
         ▼               ▼
 /v1/shape/smooth   /v1/shape/shift
         │               │
@@ -180,6 +179,9 @@ Completed constraints
         │
         ▼
    Forward curve
+        │
+        ▼
+       ...
 ```
 
 And for a base/peak market:
@@ -187,10 +189,15 @@ And for a base/peak market:
 ```text
 Base contracts ──► base curve ──┐
                                 ├──► /v1/core/compose-base-peak
-Peak contracts ──► peak curve ──┘
-                                │
-                                ▼
-                         Composed curve
+Peak contracts ──► peak curve ──┘            │
+                                             │
+                                             ▼
+                                        Forward curve
+                                             │
+                                             ▼
+                                            ...
 ```
 
-The web application provides example requests for these workflows, making it possible to experiment with the API interactively before integrating Dune into another application or data pipeline.
+The web application provides example requests for these workflows, making it possible to get used to the data structure and experiment with the API interactively before integrating Dune into another application or data pipeline. Some of the examples are valid as-is. Others may require additional data points or adjustments. Generally the examples are meant to illustrate the relevant data structure and not simulate realistic use cases.
+
+Before using Dune, make sure to visist and read through the [Dune Use & Data page](https://dune.sbcb.at/INFO.html).
