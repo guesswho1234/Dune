@@ -68,7 +68,7 @@ This makes `from-settlements` useful both for producing a curve and for understa
 
 ### 2. Inspect or modify the curve shape
 
-Once a curve exists, the shape endpoints can be used for further processing.
+Once a curve exists, the shape endpoints can be used for further processing. 
 
 For example, historical spot data can be used with:
 
@@ -86,7 +86,7 @@ POST /v1/shape/smooth
 
 can be used when the objective is to smooth an existing curve.
 
-The shape operations are deliberately separated from the final constraint projection. This allows the user to manipulate the curve shape before enforcing the market constraints.
+The shape operations are deliberately separated from the final constraint projection. This allows the user to manipulate the curve shape before enforcing the market constraints. With that, curve shaping can also happen outside of Dune.
 
 ### 3. Project the resulting shape onto the market constraints
 
