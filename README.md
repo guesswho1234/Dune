@@ -100,7 +100,7 @@ to project the curve back onto the completed constraints.
 
 This is particularly useful when a desired curve shape has been generated independently of the market settlements. The projection makes the curve consistent with the supplied constraint prices.
 
-The endpoint also reports the maximum absolute price correction and whether the resulting curve satisfies the configured tolerance.
+The endpoint also reports the maximum absolute price correction and whether the supplied curve satisfied the configured tolerance before the correction.
 
 ### 4. Work with already-completed constraints
 
